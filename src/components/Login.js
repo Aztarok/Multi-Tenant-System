@@ -1,11 +1,12 @@
 "use client";
-import { FORM_TYPES } from "@/app/formTypes";
+import { FORM_TYPES } from "@/app/[tenant]/formTypes";
 import { getSupabaseBrowserClient } from "@/supabase-utils/browserClient";
+import { urlPath } from "@/utils/url-helpers";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 
-const Login = ({ formType = "pw-login" }) => {
+const Login = ({ formType = "pw-login", tenant, tenantName }) => {
     const router = useRouter();
     const emailInputRef = useRef(null);
     const passwordInputRef = useRef(null);
@@ -15,7 +16,12 @@ const Login = ({ formType = "pw-login" }) => {
     const isPasswordLogin = formType === FORM_TYPES.PASSWORD_LOGIN;
     const isMagicLinkLogin = formType === FORM_TYPES.MAGIC_LINK;
 
-    const formAction = isPasswordLogin ? "/auth/pw-login" : "/auth/magic-link";
+    const getPath = (subPath) => urlPath(subPath ?? "", tenant);
+
+    const formAction = getPath(
+        isPasswordLogin ? `/auth/pw-login` : `/auth/magic-link`
+    );
+    const loginBasePath = getPath();
 
     useEffect(() => {
         const {
@@ -31,10 +37,11 @@ const Login = ({ formType = "pw-login" }) => {
 
     return (
         <form
-            action={formAction}
             method="POST"
+            action={formAction}
             onSubmit={(event) => {
                 isPasswordLogin && event.preventDefault();
+
                 if (isPasswordLogin) {
                     supabase.auth
                         .signInWithPassword({
@@ -42,8 +49,7 @@ const Login = ({ formType = "pw-login" }) => {
                             password: passwordInputRef.current.value
                         })
                         .then((result) => {
-                            !result.data?.user &&
-                                alert("Failed to sign in with password");
+                            !result.data?.user && alert("Could not sign in");
                         });
                 }
             }}
@@ -51,16 +57,21 @@ const Login = ({ formType = "pw-login" }) => {
             {isPasswordRecovery && (
                 <input type="hidden" name="type" value="recovery" />
             )}
+
             <article style={{ maxWidth: "480px", margin: "auto" }}>
                 <header>
                     {isPasswordRecovery && (
                         <strong>Request new password</strong>
                     )}
                     {!isPasswordRecovery && <strong>Login</strong>}
+                    <div style={{ display: "block", fontSize: "0.7em" }}>
+                        {tenantName}
+                    </div>
                 </header>
+
                 <fieldset>
                     <label htmlFor="email">
-                        Email
+                        Email{" "}
                         <input
                             ref={emailInputRef}
                             type="email"
@@ -72,22 +83,21 @@ const Login = ({ formType = "pw-login" }) => {
 
                     {isPasswordLogin && (
                         <label htmlFor="password" style={{ marginTop: "20px" }}>
-                            Password
+                            Password{" "}
                             <input
                                 ref={passwordInputRef}
                                 type="password"
                                 id="password"
                                 name="password"
-                                required
                             />
                         </label>
                     )}
                 </fieldset>
 
                 <button type="submit">
-                    {isPasswordLogin && "Sign In with Password"}
-                    {isPasswordRecovery && "Request New Password"}
-                    {isMagicLinkLogin && "Sign In with Magic Link"}
+                    {isPasswordLogin && "Sign in with Password"}
+                    {isPasswordRecovery && "Request new password"}
+                    {isMagicLinkLogin && "Sign in with Magic Link"}
                 </button>
 
                 <div
@@ -99,12 +109,17 @@ const Login = ({ formType = "pw-login" }) => {
                         marginBottom: "20px"
                     }}
                 >
+                    {isPasswordRecovery && (
+                        <div style={{ marginTop: "0.6em" }}>
+                            <small>Want to sign in instead?</small>
+                        </div>
+                    )}
                     {!isPasswordLogin && (
                         <Link
                             role="button"
                             className="contrast"
                             href={{
-                                pathname: "/",
+                                pathname: loginBasePath,
                                 query: { magicLink: "no" }
                             }}
                         >
@@ -116,7 +131,7 @@ const Login = ({ formType = "pw-login" }) => {
                             role="button"
                             className="contrast"
                             href={{
-                                pathname: "/",
+                                pathname: loginBasePath,
                                 query: { magicLink: "yes" }
                             }}
                         >
@@ -124,10 +139,11 @@ const Login = ({ formType = "pw-login" }) => {
                         </Link>
                     )}
                 </div>
+
                 {!isPasswordRecovery && (
                     <Link
                         href={{
-                            pathname: "/",
+                            pathname: loginBasePath,
                             query: { passwordRecovery: "yes" }
                         }}
                         style={{

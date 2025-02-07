@@ -1,6 +1,7 @@
+import { urlPath } from "@/utils/url-helpers";
 import Link from "next/link";
 
-export function TicketList({ tickets }) {
+export function TicketList({ tickets, tenant }) {
     return (
         <table>
             <thead>
@@ -15,7 +16,12 @@ export function TicketList({ tickets }) {
                     <tr key={ticket.id}>
                         <td>{ticket.id}</td>
                         <td>
-                            <Link href={`/tickets/details/${ticket.id}`}>
+                            <Link
+                                href={urlPath(
+                                    `/tickets/details/${ticket.id}`,
+                                    tenant
+                                )}
+                            >
                                 {ticket.title}
                             </Link>
                         </td>
